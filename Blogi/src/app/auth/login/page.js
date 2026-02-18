@@ -30,7 +30,7 @@ export default function Login() {
 
     toast.success("Kirjautuminen onnistui! Uudelleenohjataan...");
     setLoading(false);
-    router.push("/dashboard");
+    router.push("/");
   };
   return (
     <div>

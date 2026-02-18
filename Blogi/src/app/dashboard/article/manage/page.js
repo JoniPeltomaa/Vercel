@@ -6,8 +6,11 @@ import Image from 'next/image'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabaseClient'
 import { toast } from 'sonner'
+import { convertLargeImageToWebP } from "@/lib/utils";
 
-export default function page() {
+
+
+export default function Page() {
     const router = useRouter()
     const SearchParams = useSearchParams()
     const { user } = useAuth()
@@ -16,133 +19,232 @@ export default function page() {
 
     const [title, setTitle] = useState("")
     const [content, setContent] = useState("")
-    const [category, setCategory] = useState("")
+    const [category, setCategory] = useState([])
     const [thumbnail, setThumbnail] = useState(null)
     const [loading, setLoading] = useState(false)
     const [loadingArticle, setLoadingArticle] = useState(false)
     const [categories, setCategories] = useState([])
+    const [preview, setPreview] = useState(null);
 
-    const fetchCategories = async () => {
-        const {data, error} = await supabase.from("category").select("*")
 
-        if (error) {
-            toast.error("Epäonnistui hakeminen kategoria")
-            console.log("kategorioiden hakeminen epäonnistui")
-        } else {
-            setCategories(data)
-            if (data?.length && !category) {
-                setCategory(data[0].id)
-            }
-        }
-    }
+    
 
-    const fetchArticle = async () => {
-        if (articleId && user) {
-            setLoadingArticle(true)
-
-            const {data, error} = await supabase.from("article").select("*").eq("id", articleId).eq("profile_id", user?.id).single()
-
-            if (error) {
-                toast.error("Virhe ladattaessa viestejä")
-                console.error("Hakemisen Virhe: ",error)
-            } else {
-                setTitle(data?.title)
-                setContent(data?.content)
-                setThumbnail(data?.thubnail)
-                setCategory(data?.category_id)
-            }
-
-            setLoadingArticle(false)
-        }
-    }
 
     useEffect(() => {
-        fetchCategories()
-        fetchArticle()
-    }, [])
+        const fetchCategories = async () => {
+        const { data, error } = await supabase
+                .from("category")
+                .select("*")
 
-    const handleThumbnailChange = (e) => {
-        if (e.target.files && e.target.files[0]) {
-            setThumbnail(e.target.files[0])
-        }
-    }
-
-    const handleSubmit = async (e) => {
-        e.preventDefault()
-        setLoading(true)
-
-        const wordCount = content
-            ?.replace(/<[^>]*>/g, "")
-            ?.trim()
-            ?.split(/\s+/)?.length || 0
-        const readTime = Math.ceil(wordCount / 200)
-
-        let thumbnailUrl = ""
-
-        if (thumbnail && thumbnail.name) {
-            const fileExt = thumbnail.name.split(".").pop()
-            const fileName = `${Date.now()}.${fileExt}`
-            const filePath = `${user?.id}/${fileName}`
-
-            const {error : uploadError} = await supabase.storage.from("blog-bucket").upload(filePath, thumbnail)
-
-            if (uploadError) {
-                toast.error("Taustakuvan päivittäminen epäonnistui")
-                console.log("Päivittäminen Virhe: ", uploadError)
-                setLoading(false)
+            if (error) {
+                toast.error("Epäonnistui hakeminen kategoria")
+                console.log("kategorioiden hakeminen epäonnistui", error)
                 return
             }
 
-            const {data: publicUrlData} = supabase.storage.from("blog-bucket").getPublicUrl(filePath)
+            setCategories(data)
+        }
+
+        const fetchArticle = async () => {
+        if (articleId && user) {
+                setLoadingArticle(true)
+
+                const { data, error } = await supabase
+                    .from("article")
+                    .select(`
+                        *,
+                        categories:article_category(
+                            category:category_id(id, title, slug)
+                        )
+                    `)
+                    .eq("id", articleId)
+                    .eq("profile_id", user?.id)
+                    .single()
+
+                if (error) {
+                    toast.error("Virhe ladattaessa viestejä")
+                    console.error("Hakemisen Virhe: ", error)
+                } else {
+                    setTitle(data?.title)
+                    setContent(data?.content)
+                    setThumbnail(data?.thumbnail)
+
+                    // ⬇️ Muutettu: useita kategorioita
+                    setCategory(
+                        data?.categories?.map(c => c.category.id) || []
+                    )
+                }
+
+                setLoadingArticle(false)
+            }
+        }
+
+        fetchCategories()
+        fetchArticle()
+    }, [articleId, user])
+
+
+
+    useEffect(() => {
+        if (thumbnail && typeof thumbnail !== "string") {
+            const objectUrl = URL.createObjectURL(thumbnail);
+            setPreview(objectUrl);
+
+            return () => URL.revokeObjectURL(objectUrl);
+        }
+    }, [thumbnail]);
+
+
+
+
+
+    const handleThumbnailChange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  // Sallitaan jopa 50 MB kuvat
+  if (file.size > 50 * 1024 * 1024) {
+    toast.error("Kuva on liian suuri. Maksimi koko on 50MB.");
+    return;
+  }
+
+  try {
+    // 🔥 Muunna WebP:ksi automaattisesti
+    const webpBlob = await convertLargeImageToWebP(file);
+
+    // Luo uusi File WebP‑blobista
+    const webpFile = new File(
+      [webpBlob],
+      file.name.replace(/\.\w+$/, ".webp"),
+      { type: "image/webp" }
+    );
+
+    setThumbnail(webpFile);
+  } catch (err) {
+    console.error(err);
+    toast.error("Kuvan muuntaminen epäonnistui");
+  }
+};
+
+
+
+
+
+
+
+
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+
+        const wordCount =
+            content?.replace(/<[^>]*>/g, "")?.trim()?.split(/\s+/)?.length || 0;
+        const readTime = Math.ceil(wordCount / 200);
+
+        let thumbnailUrl = "";
+
+        // Upload thumbnail
+        if (thumbnail && thumbnail.name) {
+            const fileExt = thumbnail.name.split(".").pop();
+            const fileName = `${Date.now()}.${fileExt}`;
+            const filePath = `${user?.id}/${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+            .from("blog-bucket")
+            .upload(filePath, thumbnail);
+
+            if (uploadError) {
+            toast.error("Taustakuvan päivittäminen epäonnistui");
+            console.log("Päivittäminen Virhe: ", uploadError);
+            setLoading(false);
+            return;
+            }
+
+            const { data: publicUrlData } = supabase.storage
+            .from("blog-bucket")
+            .getPublicUrl(filePath);
+
             thumbnailUrl = publicUrlData.publicUrl;
         }
 
         const slug = title
             ?.toLowerCase()
             ?.trim()
-            ?.replace(/<[^>]*>/g, "") // Poistaa erikois merkit
-            .replace(/\s+/g, "-") // Korvaa välilyönnit viivoilla
-            .replace(/-+/g, "-") // Puhdistaa useat vaakaviivat
-        
-        // Edit Mode
+            ?.replace(/<[^>]*>/g, "")
+            .replace(/\s+/g, "-")
+            .replace(/-+/g, "-");
+
+        // EDIT MODE
         if (articleId) {
-            const {error} = await supabase.from("article").update({
-                title, content, category_id: category, thumbnail: thumbnailUrl || undefined, read_time: readTime
-            }).eq("id", articleId).eq("profile_id", user?.id)
-
-            if (error) {
-                toast.error("Viestin päivittäminen epäonnistui")
-                console.log("Update Error: ", error)
-                setLoading(false)
-                return
-            }
-
-            toast.success("Viestin päivittäminen onnistui")
-        } else {
-            const {data, error} = await supabase.from("article").insert({
+            // Update article
+            const { error } = await supabase
+            .from("article")
+            .update({
                 title,
                 content,
-                category_id: category,
+                thumbnail: thumbnailUrl || undefined,
+                read_time: readTime,
+            })
+            .eq("id", articleId)
+            .eq("profile_id", user?.id);
+
+            if (error) {
+            toast.error("Viestin päivittäminen epäonnistui");
+            console.log("Update Error: ", error);
+            setLoading(false);
+            return;
+            }
+
+            // Update categories
+            await supabase.from("article_category").delete().eq("article_id", articleId);
+
+            await supabase.from("article_category").insert(
+            category.map((catId) => ({
+                article_id: articleId,
+                category_id: catId,
+            }))
+            );
+
+            toast.success("Viestin päivittäminen onnistui");
+        }
+
+        // CREATE MODE
+        else {
+            const { data, error } = await supabase
+            .from("article")
+            .insert({
+                title,
+                content,
                 thumbnail: thumbnailUrl || undefined,
                 read_time: readTime,
                 slug,
                 profile_id: user?.id,
-            }).select("id").single()
+            })
+            .select("id")
+            .single();
 
             if (error) {
-                toast.error("Viestin Luominen epäonnistui")
-                console.log("Insert Error: ", error)
-                setLoading(false)
-                return
+            toast.error("Viestin Luominen epäonnistui");
+            console.log("Insert Error: ", error);
+            setLoading(false);
+            return;
             }
 
-            toast.success("Viestin luonti onnistui")
-            router.push(`/dashboard/article/manage?id=${data?.id}`)
+            // Insert categories
+            await supabase.from("article_category").insert(
+            category.map((catId) => ({
+                article_id: data.id,
+                category_id: catId,
+            }))
+            );
+
+            toast.success("Viestin luonti onnistui");
+            router.push(`/dashboard/article/manage?id=${data?.id}`);
         }
 
-        setLoading(false)
-    }
-
+        setLoading(false);
+        };
   return (
     <div>
         <Header pageType="dashboard" />
@@ -154,9 +256,18 @@ export default function page() {
                 <form onSubmit={handleSubmit} className="space-y-10 relative">
                     {/* Thumbnail Section */}
                     <div className="flex lg:flex-row flex-col gap-7 items-center">
-                        <Image width={500} height={500} src={
-                            typeof thumbnail === "string" ? thumbnail : thumbnail ? URL.createObjectURL(thumbnail) : "/assets/images/default/defaultArticle.png"
-                        } className="w-[40rem] h-[20rem] object-cover rounded-xl" alt="Thumbnail Preview" />
+                        <Image
+                            width={500}
+                            height={500}
+                            src={
+                                preview ||
+                                (typeof thumbnail === "string"
+                                ? thumbnail
+                                : "/assets/images/default/defaultArticle.png")
+                            }
+                            className="w-[40rem] h-[20rem] object-cover rounded-xl"
+                            alt="Thumbnail Preview"
+                        />
                         <div>
                             <input type="file" id="article-image" className="hidden" onChange={handleThumbnailChange} />
                             <label htmlFor="article-image" className="bg-gradient-to-r from-indigo-500 to-red-500 hover:from-red-500 hover:to-indigo-500 transition-all duration-500 text-[15px] text-white font-bold px-6 py-3 rounded-lg w-full">
@@ -178,16 +289,39 @@ export default function page() {
 
                     {/* Category Selection */}
                     <div className="flex md:flex-row flex-col justify-between gap-5">
-                        <div className="space-y-4 w-full">
-                            <label htmlFor="category" onClick={fetchCategories}>Kategoria</label>
-                            <select id="category" className="bg-[#1a202c] p-4 rounded-lg w-full outline-none text-gray-300" value={category} onChange={(e) => {setCategory(e.target.value)}}>
-                                {categories?.map((cat) => (
-                                    <option key={cat.id} value={cat.id}>{cat.title}</option>
-                                ))}
-                            </select>
+                    <div className="space-y-4 w-full">
+                        <label>Kategoriat</label>
+
+                        <div className="flex flex-wrap gap-3">
+                        {categories?.map((cat) => {
+                            const active = category.includes(cat.id);
+
+                            return (
+                            <button
+                                key={cat.id}
+                                type="button"
+                                onClick={() => {
+                                if (active) {
+                                    setCategory(category.filter((id) => id !== cat.id));
+                                } else {
+                                    setCategory([...category, cat.id]);
+                                }
+                                }}
+                                className={`px-4 py-2 rounded-lg border transition-all duration-200
+                                ${
+                                    active
+                                    ? "bg-indigo-600 border-indigo-700 text-white"
+                                    : "bg-[#1a202c] border-gray-700 text-gray-300 hover:bg-[#2a3240]"
+                                }
+                                `}
+                            >
+                                {cat.title}
+                            </button>
+                            );
+                        })}
                         </div>
                     </div>
-
+                    </div>
                     {/* Submit Button */}
                     <div className="mt-10">
                         <button type="submit" className="bg-gradient-to-r from-indigo-500 to-red-500 hover:from-red-500 hover:to-indigo-500 transition-all duration-500 text-[15px] text-white font-bold px-6 py-3 rounded-lg w-full">
