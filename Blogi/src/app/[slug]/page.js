@@ -69,25 +69,20 @@ export default function Page() {
 }, [slug]);
 
 
-
-  const categoryIcons = {
-    Ohjelmointi: "fas fa-microchip",
-    Lifestyle: "fas fa-leaf",
-    Travel: "fas fa-plane",
-    Food: "fas fa-utensils",
-    Business: "fas fa-briefcase",
-    Gaming: "fas fa-gamepad",
-    Health: "fas fa-heartbeat",
-  };
-
   const categoryColors = {
-    Ohjelmointi: "bg-blue-500",
-    Lifestyle: "bg-green-500",
-    Travel: "bg-orange-500",
-    Food: "bg-red-500",
-    Business: "bg-gray-700",
-    Gaming: "bg-purple-600",
-    Health: "bg-pink-500",
+
+  };
+  const categoryIcons = {
+    Ohjelmointi: "fas fa-code",
+    React: "fab fa-react",
+    Bootstrap: "fab fa-bootstrap",
+    Ruoka: "fas fa-utensils",
+    Nextjs: "fas fa-code",
+    Tailwind: "fab fa-tailwind-css",
+    JavaScript: "fab fa-js",
+    Nodejs: "fab fa-node-js",
+    Npm: "fab fa-npm",
+    Tietoliikenne: "fas fa-network-wired",
   };
 
   return (
@@ -113,11 +108,11 @@ export default function Page() {
           {article?.categories?.map((c) => (
             <div
               key={c.category.id}
-              className={`inline-flex items-center gap-2 p-1 w-auto text-xs rounded-full ${
+              className={`inline-flex items-center gap-2 p-2 w-auto text-xs rounded-full ${
                 categoryColors[c.category.title] || "bg-indigo-500"
               }`}
             >
-              <i className={categoryIcons[c.category.title] || "fas fa-tag"}></i>
+              <i className={`${categoryIcons[c.category.title] || "fas fa-tag "} text-2xl`}></i>
               <p>{c.category.title}</p>
             </div>
           ))}
@@ -134,7 +129,7 @@ export default function Page() {
 )}
 
           <div className="p-2 px-4 bg-indigo-800 rounded-lg">
-            <i className="fas fa-eye me-1"></i>
+            <i className="fas fa-eye me-1 "></i>
             {article?.views} Nähnyt
           </div>
 

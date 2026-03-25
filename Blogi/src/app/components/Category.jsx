@@ -13,7 +13,7 @@ const Category = () => {
     const fetchCategories = async () => {
       setLoading(true)
       const { data, error } = await supabase
-        .from('category')   // taulun nimi Supabasessa
+        .from('category')   
         .select('id, title, slug')
 
       if (error) {
@@ -34,11 +34,10 @@ const Category = () => {
   return (
     <div>
       <h1 className="text-2xl font-bold">Kategoriat 🌟</h1>
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-10 justify-between mt-10">
-          {categories?.map((category) => (
-            
-              <div className="w-full h-[5rem] relative">
-                <div className="w-full h-[5rem] bg-[#0b0011cc] absolute rounded-lg" />
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 justify-between mt-10">
+          {categories?.slice().sort((a, b) => a.title.localeCompare(b.title)).map((category) => (
+              <div className="w-full h-[5rem] relative" key={category.id}>
+                <div className="w-full h-[5rem] bg-[#69069ecc] absolute rounded-lg" />
                 <h1 className="text-xl font-semibold absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full text-center text-white">
                   {category?.title}
                 </h1>

@@ -56,7 +56,6 @@ export default function Login() {
               )}
             </button>
           </form>
-          <p className='font-light text-xs text-center text-gray-300 mt-10'>Tarvitsetko tilin? <Link className='border-b border-dashed border-gray-300' href="/auth/register">Rekisteröidy</Link> </p>
         </div>
       </section>
       <Footer />

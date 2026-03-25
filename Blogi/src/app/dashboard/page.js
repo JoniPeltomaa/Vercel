@@ -75,13 +75,9 @@ export default function Page() {
         setArticles((prev) => prev.filter((article) => article.id !== postId));
     };
 
-
-
-
-    useEffect(() => {
-    if (!profile?.id) return;
-
     const fetchDashboardData = async () => {
+        if (!profile?.id) return;
+
         setLoadingDashboardStats(true);
 
         const { data: articles, error: articleError } = await supabase
@@ -119,17 +115,8 @@ export default function Page() {
             return;
         }
 
-        const articleIds = articles?.map((a) => a.id);
-
-        if (!articleIds || articleIds.length === 0) {
-            setStats([]);
-            setArticles([]);
-            setLoadingDashboardStats(false);
-            return;
-        }
-
         const statsArray = [
-            { title: "Nähty", value: articles.reduce((sum, a) => sum + a.views, 0), icon: "fas fa-eye", bg: "bg-orange-200", text: "text-orange-600" },
+            { title: "Nähty", value: articles.reduce((sum, a) => sum + (a.views ?? 0), 0), icon: "fas fa-eye", bg: "bg-orange-200", text: "text-orange-600" },
             { title: "Viestit", value: articles.length, icon: "fas fa-file", bg: "bg-blue-200", text: "text-blue-600" },
         ];
 
@@ -138,12 +125,9 @@ export default function Page() {
         setLoadingDashboardStats(false);
     };
 
-    fetchDashboardData();
-}, [profile?.id]);
-
-
-
-
+    useEffect(() => {
+        fetchDashboardData();
+    }, [profile?.id]);
 
 
 
