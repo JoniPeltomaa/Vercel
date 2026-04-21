@@ -16,58 +16,132 @@ export default function Page() {
     const [loadingProfile, setLoadingProfile] = useState(false);
 
     const fetchProfile = async () => {
-        setLoadingProfile(true);
-        const { data, error } = await supabase.from("profile").select("*").eq("id", user.id).single();
-        if (data) setProfile(data);
-        if (error) toast.error("Error fetching profile: " + error.message);
-        setLoadingProfile(false);
-    };
+    if (!user?.id) return;
 
-    const handleChange = (e) => {
-        setProfile({ ...profile, [e.target.name]: e.target.value });
-    };
+    setLoadingProfile(true);
 
-    const handleImageUpload = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+    const { data, error } = await supabase
+      .from("profile")
+      .select("*")
+      .eq("id", user.id)
+      .single();
 
-        const fileExt = file.name.split(".").pop();
-        const fileName = `${user.id}.${fileExt}`;
-        const filePath = `avatars/${fileName}`;
+    // Jos profiiliriviä ei ole → luodaan se
+    if (!data) {
+      await supabase.from("profile").insert({
+        id: user.id,
+        full_name: "",
+        job_title: "",
+        country: "",
+        biography: "",
+        image: ""
+      });
 
-        setLoading(true);
+      // Haetaan uudestaan
+      const { data: newData } = await supabase
+        .from("profile")
+        .select("*")
+        .eq("id", user.id)
+        .single();
 
-        const { error } = await supabase.storage.from("blog-bucket").upload(filePath, file, { upsert: true });
-        if (error) {
-            toast.error("Virhe kuvan päivittämisessä: " + error.message);
-            setLoading(false);
-            return;
-        }
+      setProfile({
+        full_name: newData.full_name ?? "",
+        job_title: newData.job_title ?? "",
+        country: newData.country ?? "",
+        biography: newData.biography ?? "",
+        image: newData.image ?? ""
+      });
 
-        const { data } = supabase.storage.from("blog-bucket").getPublicUrl(filePath);
-        setProfile((prev) => ({ ...prev, image: data.publicUrl }));
-        setLoading(false);
-        toast.success("Kuva Päivitetty onnistuneesti!");
-    };
+      setLoadingProfile(false);
+      return;
+    }
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
+    // Jos profiilirivi löytyi
+    setProfile({
+      full_name: data.full_name ?? "",
+      job_title: data.job_title ?? "",
+      country: data.country ?? "",
+      biography: data.biography ?? "",
+      image: data.image ?? ""
+    });
 
-        const { error } = await supabase.from("profile").update(profile).eq("id", user.id);
-        if (error) {
-            toast.error("Virhe profiilin päivittämisessä: " + error.message);
-            setLoading(false);
-            return;
-        } else {
-            toast.success("Profiilin päivittäminen onnistui!");
-            setLoading(false);
-        }
-    };
+    setLoadingProfile(false);
+  };
 
-    useEffect(() => {
-        fetchProfile();
-    }, []);
+  // -----------------------------
+  // HANDLE INPUT CHANGE
+  // -----------------------------
+  const handleChange = (e) => {
+    setProfile({ ...profile, [e.target.name]: e.target.value });
+  };
+
+  // -----------------------------
+  // IMAGE UPLOAD
+  // -----------------------------
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${user.id}.${fileExt}`;
+    const filePath = `avatars/${fileName}`;
+
+    setLoading(true);
+
+    const { error } = await supabase.storage
+      .from("blog-bucket")
+      .upload(filePath, file, { upsert: true });
+
+    if (error) {
+      toast.error("Virhe kuvan päivittämisessä: " + error.message);
+      setLoading(false);
+      return;
+    }
+
+    const { data } = supabase.storage
+      .from("blog-bucket")
+      .getPublicUrl(filePath);
+
+    setProfile((prev) => ({ ...prev, image: data.publicUrl }));
+    setLoading(false);
+    toast.success("Kuva päivitetty onnistuneesti!");
+  };
+
+  // -----------------------------
+  // SUBMIT PROFILE
+  // -----------------------------
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    if (!user?.id) {
+      toast.error("Käyttäjää ei ole ladattu");
+      setLoading(false);
+      return;
+    }
+
+    const { error } = await supabase
+      .from("profile")
+      .update(profile)
+      .eq("id", user.id);
+
+    if (error) {
+      toast.error("Virhe profiilin päivittämisessä: " + error.message);
+    } else {
+      toast.success("Profiilin päivittäminen onnistui!");
+    }
+
+    setLoading(false);
+  };
+
+  // -----------------------------
+  // LOAD PROFILE WHEN USER READY
+  // -----------------------------
+  useEffect(() => {
+  if (user?.id) {
+    fetchProfile();
+  }
+}, []);
 
     return (
         <div>
@@ -97,19 +171,8 @@ export default function Page() {
                         <div className="flex md:flex-row flex-col justify-between gap-6">
                             <div className="space-y-4 w-full">
                                 <label>Job Title</label>
-                                <input className="bg-[#1a202c] p-4 rounded-lg w-full outline-none" name="job_title" value={profile?.job_title} onChange={handleChange} placeholder="Enter your job title" type="text" />
+                                <input className="bg-[#1a202c] p-4 rounded-lg w-full outline-none" name="job_title" value={profile?.job_title ?? ""} onChange={handleChange} placeholder="Enter your job title" type="text" />
                             </div>
-                            <div className="space-y-4 w-full">
-                                <label>Country</label>
-                                <input className="bg-[#1a202c] p-4 rounded-lg w-full outline-none" name="country" value={profile?.country} onChange={handleChange} placeholder="Enter your country" type="text" />
-                            </div>
-                        </div>
-
-                        <div className="space-y-4">
-                            <label>Biography</label>
-                            <textarea className="bg-[#1a202c] p-4 rounded-lg w-full outline-none" name="biography" value={profile?.biography} onChange={handleChange} placeholder="Tell us about yourself">
-                                Lorem ipsum dolor sit amet...
-                            </textarea>
                         </div>
 
                         <div className="mt-10">
