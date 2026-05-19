@@ -65,8 +65,12 @@ export default function EditArticlePage() {
   };
 
   useEffect(() => {
-    fetchCategories();
-    fetchArticle();
+    const loadData = async () => {
+      await fetchCategories();
+      await fetchArticle();
+    };
+
+    loadData();
   }, [slug]);
 
   // Thumbnailin vaihto

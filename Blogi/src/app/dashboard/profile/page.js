@@ -15,58 +15,7 @@ export default function Page() {
     const [loading, setLoading] = useState(false);
     const [loadingProfile, setLoadingProfile] = useState(false);
 
-    const fetchProfile = async () => {
-    if (!user?.id) return;
-
-    setLoadingProfile(true);
-
-    const { data, error } = await supabase
-      .from("profile")
-      .select("*")
-      .eq("id", user.id)
-      .single();
-
-    // Jos profiiliriviä ei ole → luodaan se
-    if (!data) {
-      await supabase.from("profile").insert({
-        id: user.id,
-        full_name: "",
-        job_title: "",
-        country: "",
-        biography: "",
-        image: ""
-      });
-
-      // Haetaan uudestaan
-      const { data: newData } = await supabase
-        .from("profile")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-
-      setProfile({
-        full_name: newData.full_name ?? "",
-        job_title: newData.job_title ?? "",
-        country: newData.country ?? "",
-        biography: newData.biography ?? "",
-        image: newData.image ?? ""
-      });
-
-      setLoadingProfile(false);
-      return;
-    }
-
-    // Jos profiilirivi löytyi
-    setProfile({
-      full_name: data.full_name ?? "",
-      job_title: data.job_title ?? "",
-      country: data.country ?? "",
-      biography: data.biography ?? "",
-      image: data.image ?? ""
-    });
-
-    setLoadingProfile(false);
-  };
+    
 
   // -----------------------------
   // HANDLE INPUT CHANGE
@@ -139,9 +88,61 @@ export default function Page() {
   // -----------------------------
   useEffect(() => {
   if (user?.id) {
-    fetchProfile();
+    
+  const fetchProfile = async () => {
+    if (!user?.id) return;
+
+    setLoadingProfile(true);
+
+    const { data, error } = await supabase
+      .from("profile")
+      .select("*")
+      .eq("id", user.id)
+      .single();
+
+    // Jos profiiliriviä ei ole → luodaan se
+    if (!data) {
+      await supabase.from("profile").insert({
+        id: user.id,
+        full_name: "",
+        job_title: "",
+        country: "",
+        biography: "",
+        image: ""
+      });
+
+      // Haetaan uudestaan
+      const { data: newData } = await supabase
+        .from("profile")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      setProfile({
+        full_name: newData.full_name ?? "",
+        job_title: newData.job_title ?? "",
+        country: newData.country ?? "",
+        biography: newData.biography ?? "",
+        image: newData.image ?? ""
+      });
+
+      setLoadingProfile(false);
+      return;
+    }
+
+    // Jos profiilirivi löytyi
+    setProfile({
+      full_name: data.full_name ?? "",
+      job_title: data.job_title ?? "",
+      country: data.country ?? "",
+      biography: data.biography ?? "",
+      image: data.image ?? ""
+    });
+
+    setLoadingProfile(false);
+  };
   }
-}, []);
+}, [user?.id]);
 
     return (
         <div>
