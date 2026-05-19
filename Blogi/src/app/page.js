@@ -134,6 +134,10 @@ export default function Home() {
                         className="w-8 h-8 object-cover rounded-full"
                       />
                     </div>
+                    <div>
+                      <h1 className="text-3xl font-bold">{article?.author?.full_name}</h1>
+                      <p className="text-gray-300 italic">{article?.author?.job_title}</p>
+                    </div>
                     <Link
                       href={`/${article?.slug}`}
                       className="bg-indigo-400 text-[12px] font-bold px-4 py-2 rounded-xl border border-[#a4adff]"

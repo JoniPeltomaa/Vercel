@@ -142,7 +142,7 @@ export default function Page() {
             content?.replace(/<[^>]*>/g, "")?.trim()?.split(/\s+/)?.length || 0;
         const readTime = Math.ceil(wordCount / 200);
 
-        let thumbnailUrl = "";
+        let thumbnailUrl = null;
 
         // Upload thumbnail
         if (thumbnail && thumbnail.name) {
@@ -183,7 +183,7 @@ export default function Page() {
             .update({
                 title,
                 content,
-                thumbnail: thumbnailUrl || undefined,
+                thumbnail: thumbnailUrl ?? undefined,
                 read_time: readTime,
             })
             .eq("id", articleId)
@@ -216,7 +216,7 @@ export default function Page() {
             .insert({
                 title,
                 content,
-                thumbnail: thumbnailUrl || undefined,
+                thumbnail: thumbnailUrl ?? undefined,
                 read_time: readTime,
                 slug,
                 profile_id: user?.id,
@@ -260,10 +260,10 @@ export default function Page() {
                             width={500}
                             height={500}
                             src={
-                                preview ||
-                                (typeof thumbnail === "string"
-                                ? thumbnail
-                                : "/assets/images/default/defaultArticle.png")
+                               preview ||
+                                (typeof thumbnail === "string" && thumbnail.startsWith("http")
+                                    ? thumbnail
+                                    : "/assets/images/default/defaultArticle.png")
                             }
                             className="w-[40rem] h-[20rem] object-cover rounded-xl"
                             alt="Thumbnail Preview"
