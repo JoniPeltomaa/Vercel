@@ -87,11 +87,9 @@ export default function Page() {
   // LOAD PROFILE WHEN USER READY
   // -----------------------------
   useEffect(() => {
-  if (user?.id) {
-    
-  const fetchProfile = async () => {
-    if (!user?.id) return;
+  if (!user?.id) return;
 
+  const fetchProfile = async () => {
     setLoadingProfile(true);
 
     const { data, error } = await supabase
@@ -111,7 +109,6 @@ export default function Page() {
         image: ""
       });
 
-      // Haetaan uudestaan
       const { data: newData } = await supabase
         .from("profile")
         .select("*")
@@ -141,7 +138,8 @@ export default function Page() {
 
     setLoadingProfile(false);
   };
-  }
+
+  fetchProfile();
 }, [user?.id]);
 
     return (
