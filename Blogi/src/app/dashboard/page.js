@@ -75,59 +75,58 @@ export default function Page() {
         setArticles((prev) => prev.filter((article) => article.id !== postId));
     };
 
-    const fetchDashboardData = async () => {
-        if (!profile?.id) return;
-
-        setLoadingDashboardStats(true);
-
-        const { data: articles, error: articleError } = await supabase
-            .from("article")
-            .select(`
-                id,
-                title,
-                content,
-                thumbnail,
-                date_created,
-                views,
-                read_time,
-                slug,
-                article_category (
-                    category_id (
-                        id,
-                        title,
-                        slug
-                    )
-                ),
-                author:profile_id (
-                    full_name,
-                    id,
-                    image,
-                    job_title
-                )
-            `)
-            .eq("profile_id", profile.id)
-            .order("date_created", { ascending: false });
-
-        if (articleError) {
-            toast.error("Virhe haettaessa artikkeleita");
-            console.log("Error fetching articles", articleError);
-            setLoadingDashboardStats(false);
-            return;
-        }
-
-        const statsArray = [
-            { title: "Nähty", value: articles.reduce((sum, a) => sum + (a.views ?? 0), 0), icon: "fas fa-eye", bg: "bg-orange-200", text: "text-orange-600" },
-            { title: "Viestit", value: articles.length, icon: "fas fa-file", bg: "bg-blue-200", text: "text-blue-600" },
-        ];
-
-        setArticles(articles);
-        setStats(statsArray);
-        setLoadingDashboardStats(false);
-    };
-
     useEffect(() => {
-        fetchDashboardData();
-    }, [profile?.id]);
+  if (!profile?.id) return;
+
+  const fetchData = async () => {
+    setLoadingDashboardStats(true);
+
+    const { data: articles, error } = await supabase
+      .from("article")
+      .select(`
+        id,
+        title,
+        content,
+        thumbnail,
+        date_created,
+        views,
+        read_time,
+        slug,
+        article_category (
+          category_id (
+            id,
+            title,
+            slug
+          )
+        ),
+        author:profile_id (
+          full_name,
+          id,
+          image,
+          job_title
+        )
+      `)
+      .eq("profile_id", profile.id)
+      .order("date_created", { ascending: false });
+
+    if (error) {
+      toast.error("Virhe haettaessa artikkeleita");
+      setLoadingDashboardStats(false);
+      return;
+    }
+
+    const statsArray = [
+      { title: "Nähty", value: articles.reduce((sum, a) => sum + (a.views ?? 0), 0), icon: "fas fa-eye", bg: "bg-orange-200", text: "text-orange-600" },
+      { title: "Viestit", value: articles.length, icon: "fas fa-file", bg: "bg-blue-200", text: "text-blue-600" },
+    ];
+
+    setArticles(articles);
+    setStats(statsArray);
+    setLoadingDashboardStats(false);
+  };
+
+  fetchData();
+}, [profile?.id]);
 
 
 
