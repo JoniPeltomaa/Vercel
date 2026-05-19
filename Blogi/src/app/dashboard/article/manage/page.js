@@ -1,11 +1,11 @@
-"use client"
-import {useEffect, useState} from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { Header, Footer } from '@/app/components'
-import Image from 'next/image'
-import { useAuth } from '@/context/AuthContext'
-import { supabase } from '@/lib/supabaseClient'
-import { toast } from 'sonner'
+"use client";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Header, Footer } from "@/app/components";
+import Image from "next/image";
+import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabaseClient";
+import { toast } from "sonner";
 import { convertLargeImageToWebP } from "@/lib/utils";
 
 

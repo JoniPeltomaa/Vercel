@@ -64,13 +64,22 @@ export default function EditArticlePage() {
   };
 
   useEffect(() => {
-    const loadData = async () => {
-      await fetchCategories();
-      await fetchArticle();
-    };
+  let isMounted = true;
 
-    loadData();
-  }, [slug]);
+  const loadData = async () => {
+    const data = await fetchSomething();
+
+    if (isMounted) {
+      setState(data); // sallitaan vain jos komponentti on yhä olemassa
+    }
+  };
+
+  loadData();
+
+  return () => {
+    isMounted = false; // komponentti poistuu → estetään setState
+  };
+}, []);
 
   // Thumbnailin vaihto
   const handleThumbnailChange = (e) => {
