@@ -8,8 +8,6 @@ import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
 import { convertLargeImageToWebP } from "@/lib/utils";
 
-
-
 export default function Page() {
     const router = useRouter()
     const SearchParams = useSearchParams()
@@ -25,10 +23,6 @@ export default function Page() {
     const [loadingArticle, setLoadingArticle] = useState(false)
     const [categories, setCategories] = useState([])
     const [preview, setPreview] = useState(null);
-
-
-    
-
 
     useEffect(() => {
         const fetchCategories = async () => {
@@ -95,9 +89,6 @@ export default function Page() {
     }, [thumbnail]);
 
 
-
-
-
     const handleThumbnailChange = async (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -125,14 +116,6 @@ export default function Page() {
     toast.error("Kuvan muuntaminen epäonnistui");
   }
 };
-
-
-
-
-
-
-
-
 
     const handleSubmit = async (e) => {
         e.preventDefault();
