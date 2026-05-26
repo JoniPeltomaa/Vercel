@@ -1,7 +1,6 @@
 "use client"
 import { createContext, useContext, useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
-import { useRouter } from "next/navigation"
 
 const AuthContext = createContext()
 
@@ -9,8 +8,6 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null)
     const [profile, setProfile] = useState(null)
     const [loading, setLoading] = useState(true)
-
-    const router = useRouter()
 
     useEffect(() => {
         const loadUserProfile = async (userId) => {
@@ -22,18 +19,12 @@ export const AuthProvider = ({ children }) => {
                     .single();
 
                 if (profileError) {
-                    console.error(
-                        "Virhe haettaessa profiilia:",
-                        profileError.message
-                    );
+                    console.error("Virhe haettaessa profiilia:", profileError.message);
                 } else {
                     setProfile(profileData);
                 }
             } catch (error) {
-                console.error(
-                    "Profiilin lataaminen epäonnistui:",
-                    error
-                );
+                console.error("Profiilin lataaminen epäonnistui:", error);
             }
         };
 
@@ -41,39 +32,45 @@ export const AuthProvider = ({ children }) => {
             try {
                 const { data, error } = await supabase.auth.getUser();
 
-                if (error || !data.error) {
+                // ✅ Korjattu: oli "!data.error" → pitää olla "!data.user"
+                if (error || !data.user) {
                     setUser(null);
                     setProfile(null);
                 } else {
-                    setUser(data?.user);
-                    loadUserProfile(data?.user?.id);
+                    setUser(data.user);
+                    loadUserProfile(data.user.id);
                 }
             } catch (error) {
                 console.error("Käyttäjän tarkistus epäonnistui:", error);
             }
 
             setLoading(false);
-
         };
 
-        const { data: autListener } = supabase.auth.onAuthStateChange(
+        const { data: authListener } = supabase.auth.onAuthStateChange(
             (event, session) => {
-                if (session && session?.user) {
+                if (session?.user) {
                     setUser(session.user);
                     loadUserProfile(session.user.id);
                 } else {
                     setUser(null);
                     setProfile(null);
                 }
+
+                setLoading(false);
             }
         );
 
         checkUser();
 
-        return () => autListener.subscription.unsubscribe();
-    }, [router, user]);
+        return () => authListener.subscription.unsubscribe();
+    }, []); // ✅ Korjattu: poistettu "router" ja "user" — tyhjä lista riittää
 
-    return <AuthContext.Provider value={{ user, profile, loading }}>{children}</AuthContext.Provider>
+    return (
+        <AuthContext.Provider value={{ user, profile, loading }}>
+            {children}
+        </AuthContext.Provider>
+    )
 };
 
 export const useAuth = () => useContext(AuthContext);
