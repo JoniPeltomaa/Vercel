@@ -138,6 +138,9 @@ export default function ManageArticle() {
     const slug = title
       ?.toLowerCase()
       ?.trim()
+      ?.replace(/ä/g, "a")
+      ?.replace(/ö/g, "o")
+      ?.replace(/å/g, "a")
       ?.replace(/<[^>]*>/g, "")
       .replace(/\s+/g, "-")
       .replace(/-+/g, "-");
