@@ -146,7 +146,7 @@ export default function Page() {
                 ))}
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <div className="p-5 rounded-lg bg-[#07050D] border border-[#110c1f] space-y-8" onClick={fetchDashboardData} >
+                <div className="p-5 rounded-lg bg-[#07050D] border border-[#110c1f] space-y-8">
                     <div className="space-y-1 mb-10">
                         <h2 className="text-3xl font-bold">Blogi Viestit</h2>
                         <p className="text-sm text-gary-300">Kaikki Viestit</p>
@@ -155,7 +155,7 @@ export default function Page() {
                         {articles?.map((article, index) => (
                             <div key={article.id} className="border border-[#110c1f] py-5 me-2">
                                 <div className="flex gap-4 items-center">
-                                    <Image width={100} height={100} src={article?.thumbnail} className="w-20 h-20 object-cover rounded-md" alt={article?.title} />
+                                    <Image width={100} height={100} src={article?.thumbnail || "/assets/images/default/defaultArticle.png"} className="w-20 h-20 object-cover rounded-md" alt={article?.title} />
                                     <div className="space-y-2">
                                         <p className="text-md">{article?.title}</p>
                                         <div className="flex gap-4">
