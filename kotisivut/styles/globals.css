@@ -1,0 +1,11 @@
+@import "tailwindcss";
+@import "flowbite";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-background: #578EF5;
+  --color-background-dark: #080616;
+  --color-nav-bg: #162E93;
+  --color-nav-bg-dark: #162E93;
+}
